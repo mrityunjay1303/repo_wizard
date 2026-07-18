@@ -2,6 +2,7 @@
 
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArticleIcon from '@mui/icons-material/Article';
+import FolderRoundedIcon from '@mui/icons-material/FolderRounded';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CodeIcon from '@mui/icons-material/Code';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -60,6 +61,10 @@ function readStoredOnboarding() {
   }
 }
 
+function encodeGitHubPath(path) {
+  return path.split('/').map(encodeURIComponent).join('/');
+}
+
 function decodeBase64(content) {
   const binary = window.atob(content.replace(/\n/g, ''));
   const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
@@ -69,8 +74,9 @@ function decodeBase64(content) {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const [storedOnboarding, setStoredOnboarding] = useState(null);
-  const [files, setFiles] = useState([]);
+  const [entries, setEntries] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [currentPath, setCurrentPath] = useState('');
   const [code, setCode] = useState('');
   const [status, setStatus] = useState('loading');
   const [codeStatus, setCodeStatus] = useState('idle');
@@ -86,7 +92,7 @@ function DashboardContent() {
   const githubRepo = useMemo(() => parseGitHubRepo(repoUrl), [repoUrl]);
   const repoName = githubRepo ? `${githubRepo.owner}/${githubRepo.repo}` : repoUrl;
 
-  const loadRepositoryFiles = useCallback(async () => {
+  const loadRepositoryFiles = useCallback(async (path = currentPath) => {
     if (!githubRepo) {
       setStatus('error');
       setErrorMessage('This dashboard currently supports GitHub repository URLs.');
@@ -98,7 +104,7 @@ function DashboardContent() {
 
     try {
       const response = await fetch(
-        `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/contents?ref=${encodeURIComponent(branchName)}`,
+        `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/contents/${encodeGitHubPath(path)}?ref=${encodeURIComponent(branchName)}`,
         { headers: { Accept: 'application/vnd.github+json' } },
       );
 
@@ -107,19 +113,40 @@ function DashboardContent() {
       }
 
       const contents = await response.json();
-      const fileContents = contents.filter((item) => item.type === 'file').slice(0, 12);
-      setFiles(fileContents);
-      setSelectedFile(fileContents[0] || null);
+      const normalizedContents = Array.isArray(contents) ? contents : [contents];
+      const visibleEntries = normalizedContents
+        .filter((item) => item.type === 'dir' || item.type === 'file')
+        .sort((first, second) => {
+          if (first.type !== second.type) {
+            return first.type === 'dir' ? -1 : 1;
+          }
+          return first.name.localeCompare(second.name);
+        });
+      const firstFile = visibleEntries.find((item) => item.type === 'file') || null;
+      setEntries(visibleEntries);
+      setSelectedFile(firstFile);
       setStatus('ready');
     } catch (error) {
       setStatus('error');
       setErrorMessage(error.message);
     }
-  }, [branchName, githubRepo]);
+  }, [branchName, currentPath, githubRepo]);
 
   useEffect(() => {
-    loadRepositoryFiles();
-  }, [loadRepositoryFiles]);
+    loadRepositoryFiles(currentPath);
+  }, [currentPath, loadRepositoryFiles]);
+
+  function openFolder(folderPath) {
+    setCurrentPath(folderPath);
+    setSelectedFile(null);
+    setCode('');
+  }
+
+  function openPath(path) {
+    setCurrentPath(path);
+    setSelectedFile(null);
+    setCode('');
+  }
 
   useEffect(() => {
     async function loadCode() {
@@ -132,7 +159,7 @@ function DashboardContent() {
 
       try {
         const response = await fetch(
-          `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/contents/${selectedFile.path}?ref=${encodeURIComponent(branchName)}`,
+          `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/contents/${encodeGitHubPath(selectedFile.path)}?ref=${encodeURIComponent(branchName)}`,
           { headers: { Accept: 'application/vnd.github+json' } },
         );
 
@@ -195,7 +222,7 @@ function DashboardContent() {
                     <Button component={NextLink} href="/" variant="outlined" startIcon={<HomeRoundedIcon />}>
                       Onboard another repo
                     </Button>
-                    <Button variant="contained" startIcon={<RefreshIcon />} onClick={loadRepositoryFiles}>
+                    <Button variant="contained" startIcon={<RefreshIcon />} onClick={() => loadRepositoryFiles(currentPath)}>
                       Refresh repository
                     </Button>
                   </Stack>
@@ -219,26 +246,37 @@ function DashboardContent() {
                       <Typography fontWeight={800}>{repoName}</Typography>
                     </Stack>
                     <Chip icon={<AccountTreeIcon />} label={branchName} variant="outlined" sx={{ alignSelf: 'flex-start' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Path: /{currentPath || 'root'}
+                    </Typography>
                   </Stack>
                 </Box>
                 <Divider />
                 {status === 'loading' ? (
                   <Stack alignItems="center" spacing={2} sx={{ p: 4 }}>
                     <CircularProgress />
-                    <Typography color="text.secondary">Fetching repository files...</Typography>
+                    <Typography color="text.secondary">Fetching repository contents...</Typography>
                   </Stack>
                 ) : (
                   <List disablePadding>
-                    {files.map((file) => (
+                    {currentPath && (
+                      <ListItemButton onClick={() => openPath(currentPath.split('/').slice(0, -1).join('/'))}>
+                        <ListItemIcon>
+                          <FolderRoundedIcon color="primary" />
+                        </ListItemIcon>
+                        <ListItemText primary=".." secondary="Parent folder" />
+                      </ListItemButton>
+                    )}
+                    {entries.map((entry) => (
                       <ListItemButton
-                        key={file.sha}
-                        selected={selectedFile?.path === file.path}
-                        onClick={() => setSelectedFile(file)}
+                        key={entry.sha || entry.path}
+                        selected={entry.type === 'file' && selectedFile?.path === entry.path}
+                        onClick={() => (entry.type === 'dir' ? openFolder(entry.path) : setSelectedFile(entry))}
                       >
                         <ListItemIcon>
-                          <ArticleIcon />
+                          {entry.type === 'dir' ? <FolderRoundedIcon color="primary" /> : <ArticleIcon />}
                         </ListItemIcon>
-                        <ListItemText primary={file.name} secondary={file.path} />
+                        <ListItemText primary={entry.name} secondary={entry.type === 'dir' ? 'Folder' : entry.path} />
                       </ListItemButton>
                     ))}
                   </List>
@@ -258,7 +296,7 @@ function DashboardContent() {
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <CodeIcon color="secondary" />
                     <Box>
-                      <Typography fontWeight={800}>{selectedFile?.name || 'Select a file'}</Typography>
+                      <Typography fontWeight={800}>{selectedFile?.name || (currentPath ? 'Select a file in this folder' : 'Select a file')}</Typography>
                       <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.68)' }}>
                         Live GitHub preview from {branchName}
                       </Typography>
