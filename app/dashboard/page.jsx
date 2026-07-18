@@ -14,6 +14,7 @@ import {
   Breadcrumbs,
   Button,
   Chip,
+  CircularProgress,
   Container,
   Divider,
   Grid,
@@ -29,28 +30,23 @@ import {
 } from '@mui/material';
 import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-const fallbackRepo = 'https://github.com/acme/platform.git';
-const fallbackBranch = 'main';
+const repoUrlPattern = /^(https?:\/\/|git@)([\w.-]+)([:/])([\w.-]+)\/([\w.-]+?)(\.git)?$/i;
+const fallbackRepo = 'https://github.com/vercel/next.js.git';
+const fallbackBranch = 'canary';
 
-const files = [
-  {
-    name: 'README.md',
-    language: 'markdown',
-    code: `# Repo Wizard Onboarding\n\nThis repository has been connected to Repo Wizard.\n\n- Source branch: {{branch}}\n- Repository: {{repo}}\n- Status: ready for analysis`,
-  },
-  {
-    name: 'src/app.js',
-    language: 'javascript',
-    code: `import { createServer } from 'node:http';\n\nconst branch = '{{branch}}';\nconst repository = '{{repo}}';\n\ncreateServer((request, response) => {\n  response.end(\`Analyzing \${repository} on \${branch}\`);\n}).listen(3000);`,
-  },
-  {
-    name: 'package.json',
-    language: 'json',
-    code: `{\n  "name": "connected-repository",\n  "branch": "{{branch}}",\n  "repository": "{{repo}}",\n  "scripts": {\n    "analyze": "repo-wizard analyze"\n  }\n}`,
-  },
-];
+function parseGitHubRepo(repoUrl) {
+  const match = repoUrl.match(repoUrlPattern);
+  if (!match || !match[2].toLowerCase().includes('github.com')) {
+    return null;
+  }
+
+  return {
+    owner: match[4],
+    repo: match[5].replace(/\.git$/i, ''),
+  };
+}
 
 function readStoredOnboarding() {
   if (typeof window === 'undefined') {
@@ -64,16 +60,21 @@ function readStoredOnboarding() {
   }
 }
 
-function repoNameFromUrl(repoUrl) {
-  const withoutGit = repoUrl.replace(/\.git$/i, '');
-  const parts = withoutGit.split(/[/:]/).filter(Boolean);
-  return parts.slice(-2).join('/');
+function decodeBase64(content) {
+  const binary = window.atob(content.replace(/\n/g, ''));
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
 function DashboardContent() {
   const searchParams = useSearchParams();
   const [storedOnboarding, setStoredOnboarding] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(files[0]);
+  const [files, setFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [code, setCode] = useState('');
+  const [status, setStatus] = useState('loading');
+  const [codeStatus, setCodeStatus] = useState('idle');
+  const [errorMessage, setErrorMessage] = useState('');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -82,14 +83,77 @@ function DashboardContent() {
 
   const repoUrl = searchParams.get('repo') || storedOnboarding?.repoUrl || fallbackRepo;
   const branchName = searchParams.get('branch') || storedOnboarding?.branchName || fallbackBranch;
-  const repoName = repoNameFromUrl(repoUrl);
-  const renderedCode = useMemo(
-    () => selectedFile.code.replaceAll('{{repo}}', repoUrl).replaceAll('{{branch}}', branchName),
-    [branchName, repoUrl, selectedFile],
-  );
+  const githubRepo = useMemo(() => parseGitHubRepo(repoUrl), [repoUrl]);
+  const repoName = githubRepo ? `${githubRepo.owner}/${githubRepo.repo}` : repoUrl;
+
+  const loadRepositoryFiles = useCallback(async () => {
+    if (!githubRepo) {
+      setStatus('error');
+      setErrorMessage('This dashboard currently supports GitHub repository URLs.');
+      return;
+    }
+
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/contents?ref=${encodeURIComponent(branchName)}`,
+        { headers: { Accept: 'application/vnd.github+json' } },
+      );
+
+      if (!response.ok) {
+        throw new Error('Unable to fetch repository files from GitHub for the selected branch.');
+      }
+
+      const contents = await response.json();
+      const fileContents = contents.filter((item) => item.type === 'file').slice(0, 12);
+      setFiles(fileContents);
+      setSelectedFile(fileContents[0] || null);
+      setStatus('ready');
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error.message);
+    }
+  }, [branchName, githubRepo]);
+
+  useEffect(() => {
+    loadRepositoryFiles();
+  }, [loadRepositoryFiles]);
+
+  useEffect(() => {
+    async function loadCode() {
+      if (!selectedFile || !githubRepo) {
+        setCode('');
+        return;
+      }
+
+      setCodeStatus('loading');
+
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/contents/${selectedFile.path}?ref=${encodeURIComponent(branchName)}`,
+          { headers: { Accept: 'application/vnd.github+json' } },
+        );
+
+        if (!response.ok) {
+          throw new Error('Unable to fetch file contents from GitHub.');
+        }
+
+        const file = await response.json();
+        setCode(decodeBase64(file.content));
+        setCodeStatus('ready');
+      } catch (error) {
+        setCode(error.message);
+        setCodeStatus('error');
+      }
+    }
+
+    loadCode();
+  }, [branchName, githubRepo, selectedFile]);
 
   async function copyCode() {
-    await navigator.clipboard.writeText(renderedCode);
+    await navigator.clipboard.writeText(code);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   }
@@ -121,8 +185,8 @@ function DashboardContent() {
                       {repoName}
                     </Typography>
                     <Typography color="text.secondary" sx={{ fontSize: 18 }}>
-                      Connected to <strong>{branchName}</strong>. Review repository code, verify structure, and prepare the
-                      next automation step from one dashboard.
+                      Connected to <strong>{branchName}</strong> with live repository data from GitHub. Review files,
+                      inspect code, and prepare the next automation step from one dashboard.
                     </Typography>
                   </Stack>
                 </Grid>
@@ -131,7 +195,7 @@ function DashboardContent() {
                     <Button component={NextLink} href="/" variant="outlined" startIcon={<HomeRoundedIcon />}>
                       Onboard another repo
                     </Button>
-                    <Button variant="contained" startIcon={<RefreshIcon />}>
+                    <Button variant="contained" startIcon={<RefreshIcon />} onClick={loadRepositoryFiles}>
                       Refresh repository
                     </Button>
                   </Stack>
@@ -139,6 +203,8 @@ function DashboardContent() {
               </Grid>
             </Stack>
           </Paper>
+
+          {status === 'error' && <Alert severity="error">{errorMessage}</Alert>}
 
           <Grid container spacing={3}>
             <Grid item xs={12} md={4} lg={3}>
@@ -156,20 +222,27 @@ function DashboardContent() {
                   </Stack>
                 </Box>
                 <Divider />
-                <List disablePadding>
-                  {files.map((file) => (
-                    <ListItemButton
-                      key={file.name}
-                      selected={selectedFile.name === file.name}
-                      onClick={() => setSelectedFile(file)}
-                    >
-                      <ListItemIcon>
-                        <ArticleIcon />
-                      </ListItemIcon>
-                      <ListItemText primary={file.name} secondary={file.language} />
-                    </ListItemButton>
-                  ))}
-                </List>
+                {status === 'loading' ? (
+                  <Stack alignItems="center" spacing={2} sx={{ p: 4 }}>
+                    <CircularProgress />
+                    <Typography color="text.secondary">Fetching repository files...</Typography>
+                  </Stack>
+                ) : (
+                  <List disablePadding>
+                    {files.map((file) => (
+                      <ListItemButton
+                        key={file.sha}
+                        selected={selectedFile?.path === file.path}
+                        onClick={() => setSelectedFile(file)}
+                      >
+                        <ListItemIcon>
+                          <ArticleIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={file.name} secondary={file.path} />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
               </Paper>
             </Grid>
 
@@ -185,13 +258,17 @@ function DashboardContent() {
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <CodeIcon color="secondary" />
                     <Box>
-                      <Typography fontWeight={800}>{selectedFile.name}</Typography>
+                      <Typography fontWeight={800}>{selectedFile?.name || 'Select a file'}</Typography>
                       <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.68)' }}>
-                        Live preview from {branchName}
+                        Live GitHub preview from {branchName}
                       </Typography>
                     </Box>
                   </Stack>
-                  <IconButton onClick={copyCode} sx={{ color: 'white', border: '1px solid rgba(255,255,255,0.18)' }}>
+                  <IconButton
+                    onClick={copyCode}
+                    disabled={!code || codeStatus === 'loading'}
+                    sx={{ color: 'white', border: '1px solid rgba(255,255,255,0.18)' }}
+                  >
                     <ContentCopyIcon />
                   </IconButton>
                 </Stack>
@@ -210,7 +287,7 @@ function DashboardContent() {
                     fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
                   }}
                 >
-                  <code>{renderedCode}</code>
+                  <code>{codeStatus === 'loading' ? 'Loading file from GitHub...' : code}</code>
                 </Box>
               </Paper>
             </Grid>

@@ -18,16 +18,30 @@ import {
   Divider,
   Grid,
   InputAdornment,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 
 const repoUrlPattern = /^(https?:\/\/|git@)([\w.-]+)([:/])([\w.-]+)\/([\w.-]+?)(\.git)?$/i;
+
+function parseGitHubRepo(repoUrl) {
+  const match = repoUrl.match(repoUrlPattern);
+  if (!match || !match[2].toLowerCase().includes('github.com')) {
+    return null;
+  }
+
+  return {
+    owner: match[4],
+    repo: match[5].replace(/\.git$/i, ''),
+  };
+}
 
 const features = [
   {
@@ -50,12 +64,67 @@ const features = [
 export default function Home() {
   const router = useRouter();
   const [repoUrl, setRepoUrl] = useState('');
-  const [branchName, setBranchName] = useState('main');
+  const [branchName, setBranchName] = useState('');
+  const [branches, setBranches] = useState([]);
+  const [branchStatus, setBranchStatus] = useState('idle');
+  const [branchErrorMessage, setBranchErrorMessage] = useState('');
   const [state, setState] = useState('idle');
 
   const repoUrlError = useMemo(() => repoUrl.length > 0 && !repoUrlPattern.test(repoUrl), [repoUrl]);
   const branchError = useMemo(() => branchName.trim().length === 0 || /\s/.test(branchName), [branchName]);
-  const canSubmit = repoUrl.length > 0 && !repoUrlError && !branchError;
+  const githubRepo = useMemo(() => parseGitHubRepo(repoUrl), [repoUrl]);
+  const canSubmit = repoUrl.length > 0 && !repoUrlError && !branchError && branches.length > 0;
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchBranches() {
+      setState('idle');
+      setBranchName('');
+      setBranches([]);
+      setBranchErrorMessage('');
+
+      if (!repoUrl || repoUrlError) {
+        setBranchStatus('idle');
+        return;
+      }
+
+      if (!githubRepo) {
+        setBranchStatus('error');
+        setBranchErrorMessage('Only GitHub repository URLs can be onboarded right now.');
+        return;
+      }
+
+      setBranchStatus('loading');
+
+      try {
+        const response = await fetch(`https://api.github.com/repos/${githubRepo.owner}/${githubRepo.repo}/branches`, {
+          signal: controller.signal,
+          headers: { Accept: 'application/vnd.github+json' },
+        });
+
+        if (!response.ok) {
+          throw new Error('Unable to load branches. Confirm the repository is public or GitHub access is configured.');
+        }
+
+        const branchData = await response.json();
+        const branchNames = branchData.map((branch) => branch.name);
+        setBranches(branchNames);
+        setBranchName(branchNames[0] || '');
+        setBranchStatus('ready');
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return;
+        }
+        setBranchStatus('error');
+        setBranchErrorMessage(error.message);
+      }
+    }
+
+    fetchBranches();
+
+    return () => controller.abort();
+  }, [githubRepo, repoUrl, repoUrlError]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -142,7 +211,7 @@ export default function Home() {
                     Repository details
                   </Typography>
                   <Typography color="text.secondary">
-                    Enter the URL and branch name for the existing repository you want to onboard.
+                    Enter a GitHub repository URL, then select one of its real branches from GitHub.
                   </Typography>
                 </Box>
 
@@ -166,18 +235,29 @@ export default function Home() {
                   fullWidth
                 />
 
-                <TextField
-                  label="Branch name"
-                  placeholder="main"
+                <Select
                   value={branchName}
                   onChange={(event) => {
-                    setBranchName(event.target.value.trim());
+                    setBranchName(event.target.value);
                     setState('idle');
                   }}
-                  error={branchError}
-                  helperText={branchError ? 'Branch name is required and cannot contain spaces.' : 'Choose the branch to analyze first.'}
+                  displayEmpty
+                  disabled={branchStatus !== 'ready'}
                   fullWidth
-                />
+                >
+                  <MenuItem value="" disabled>
+                    {branchStatus === 'loading' ? 'Loading branches from GitHub...' : 'Select a branch'}
+                  </MenuItem>
+                  {branches.map((branch) => (
+                    <MenuItem key={branch} value={branch}>
+                      {branch}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {branchStatus === 'ready' && (
+                  <Alert severity="info">Loaded {branches.length} branch{branches.length === 1 ? '' : 'es'} from GitHub.</Alert>
+                )}
+                {branchStatus === 'error' && <Alert severity="error">{branchErrorMessage}</Alert>}
 
                 <Button type="submit" variant="contained" size="large" disabled={!canSubmit}>
                   Onboard repository
