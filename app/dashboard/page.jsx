@@ -233,7 +233,7 @@ function DashboardContent() {
           'radial-gradient(circle at 8% 8%, rgba(79,70,229,0.20), transparent 30%), radial-gradient(circle at 92% 0%, rgba(6,182,212,0.18), transparent 28%), #f6f8fc',
       }}
     >
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, md: 5 } }}>
         <Stack spacing={4}>
           <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, border: '1px solid rgba(16,24,40,0.08)' }}>
             <Stack spacing={3}>
@@ -248,7 +248,7 @@ function DashboardContent() {
                 <Grid item xs={12} md={8}>
                   <Stack spacing={2}>
                     <Chip icon={<CheckCircleIcon />} label="Repository onboarded" color="success" sx={{ alignSelf: 'flex-start' }} />
-                    <Typography variant="h2" sx={{ fontSize: { xs: 36, md: 56 } }}>
+                    <Typography variant="h2" sx={{ fontSize: { xs: 32, sm: 42, md: 56 }, wordBreak: 'break-word' }}>
                       {repoName}
                     </Typography>
                     <Typography color="text.secondary" sx={{ fontSize: 18 }}>
@@ -273,7 +273,7 @@ function DashboardContent() {
 
           <Grid container spacing={3} alignItems="stretch">
             <Grid item xs={12} md={3}>
-              <Paper elevation={0} sx={{ height: '100%', border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ height: '100%', position: { md: 'sticky' }, top: { md: 24 }, border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
                 <Box sx={{ p: 2.5 }}>
                   <Stack spacing={1}>
                     <Typography variant="overline" color="text.secondary">
@@ -287,14 +287,14 @@ function DashboardContent() {
                   </Stack>
                 </Box>
                 <Divider />
-                <List disablePadding>
-                  <ListItemButton selected={activeSection === 'files'} onClick={() => setActiveSection('files')}>
+                <List disablePadding sx={{ display: { xs: 'flex', md: 'block' }, overflowX: { xs: 'auto', md: 'visible' } }}>
+                  <ListItemButton sx={{ minWidth: { xs: 220, md: 'auto' } }} selected={activeSection === 'files'} onClick={() => setActiveSection('files')}>
                     <ListItemIcon>
                       <FolderRoundedIcon color={activeSection === 'files' ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Files & folders" secondary="Browse repository code" />
                   </ListItemButton>
-                  <ListItemButton selected={activeSection === 'pullRequests'} onClick={() => setActiveSection('pullRequests')}>
+                  <ListItemButton sx={{ minWidth: { xs: 220, md: 'auto' } }} selected={activeSection === 'pullRequests'} onClick={() => setActiveSection('pullRequests')}>
                     <ListItemIcon>
                       <CallMergeIcon color={activeSection === 'pullRequests' ? 'primary' : 'inherit'} />
                     </ListItemIcon>
@@ -304,12 +304,12 @@ function DashboardContent() {
               </Paper>
             </Grid>
 
-            <Grid item xs={12} md={9}>
+            <Grid item xs={12} md={9} sx={{ minWidth: 0 }}>
               {activeSection === 'files' ? (
                 <Stack spacing={3}>
                   {status === 'error' && <Alert severity="error">{errorMessage}</Alert>}
                   <Grid container spacing={3}>
-                    <Grid item xs={12} lg={4}>
+                    <Grid item xs={12} lg={4} sx={{ minWidth: 0 }}>
                       <Paper elevation={0} sx={{ border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
                         <Box sx={{ p: 2.5 }}>
                           <Stack spacing={1}>
@@ -354,7 +354,7 @@ function DashboardContent() {
                       </Paper>
                     </Grid>
 
-                    <Grid item xs={12} lg={8}>
+                    <Grid item xs={12} lg={8} sx={{ minWidth: 0 }}>
                       <Paper elevation={0} sx={{ border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
                         <Stack
                           direction={{ xs: 'column', sm: 'row' }}
@@ -386,11 +386,12 @@ function DashboardContent() {
                           sx={{
                             m: 0,
                             p: { xs: 2.5, md: 4 },
-                            minHeight: 440,
+                            minHeight: { xs: 300, md: 440 },
+                            maxWidth: '100%',
                             overflow: 'auto',
                             bgcolor: '#0b1020',
                             color: '#d8e2ff',
-                            fontSize: 15,
+                            fontSize: { xs: 12, sm: 14, md: 15 },
                             lineHeight: 1.75,
                             fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
                           }}
@@ -426,6 +427,7 @@ function DashboardContent() {
                       <>
                         <Select
                           value={selectedPullRequest?.number || ''}
+                          sx={{ maxWidth: '100%' }}
                           onChange={(event) => {
                             const nextPullRequest = pullRequests.find((pullRequest) => pullRequest.number === event.target.value);
                             setSelectedPullRequest(nextPullRequest || null);
@@ -442,20 +444,20 @@ function DashboardContent() {
                         {selectedPullRequest && (
                           <Grid container spacing={2}>
                             <Grid item xs={12} md={8}>
-                              <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
+                              <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, height: '100%', minWidth: 0 }}>
                                 <Stack spacing={1.5}>
                                   <Chip label={selectedPullRequest.state} color={selectedPullRequest.state === 'open' ? 'success' : 'default'} sx={{ alignSelf: 'flex-start' }} />
-                                  <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                                  <Typography variant="h5" sx={{ fontWeight: 800, overflowWrap: 'anywhere' }}>
                                     #{selectedPullRequest.number} {selectedPullRequest.title}
                                   </Typography>
-                                  <Typography color="text.secondary">
+                                  <Typography color="text.secondary" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
                                     {selectedPullRequest.body || 'No pull request description provided.'}
                                   </Typography>
                                 </Stack>
                               </Paper>
                             </Grid>
                             <Grid item xs={12} md={4}>
-                              <Paper variant="outlined" sx={{ p: 3, height: '100%' }}>
+                              <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, height: '100%', minWidth: 0 }}>
                                 <Stack spacing={1.5}>
                                   <Typography fontWeight={800}>Details</Typography>
                                   <Typography color="text.secondary">Author: {selectedPullRequest.user?.login}</Typography>

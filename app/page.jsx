@@ -146,8 +146,8 @@ export default function Home() {
           'linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.35)), radial-gradient(circle at 12% 12%, rgba(79,70,229,0.24), transparent 32%), radial-gradient(circle at 82% 10%, rgba(6,182,212,0.22), transparent 28%), radial-gradient(circle at 70% 78%, rgba(168,85,247,0.14), transparent 30%), #f6f8fc',
       }}
     >
-      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 7 } }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: { xs: 6, md: 10 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 3, md: 7 } }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: { xs: 5, md: 10 } }}>
           <Stack direction="row" spacing={1.25} alignItems="center">
             <Box
               sx={{
@@ -165,7 +165,7 @@ export default function Home() {
             </Box>
             <Typography variant="h5">Repo Wizard</Typography>
           </Stack>
-          <Chip label="Existing repository onboarding" color="primary" variant="outlined" />
+          <Chip label="Existing repository onboarding" color="primary" variant="outlined" sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />
         </Stack>
 
         <Grid container spacing={4} alignItems="center">
@@ -176,7 +176,7 @@ export default function Home() {
                 label="Bring your own repo URL and branch"
                 sx={{ alignSelf: 'flex-start', bgcolor: 'white', border: '1px solid rgba(79,70,229,0.16)' }}
               />
-              <Typography variant="h1" sx={{ fontSize: { xs: 44, md: 72 }, lineHeight: 0.92 }}>
+              <Typography variant="h1" sx={{ fontSize: { xs: 40, sm: 54, md: 72 }, lineHeight: { xs: 1, md: 0.92 } }}>
                 Onboard the repositories you already use.
               </Typography>
               <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 620, lineHeight: 1.7 }}>
