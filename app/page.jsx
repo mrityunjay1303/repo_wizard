@@ -1,6 +1,7 @@
 'use client';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import BoltIcon from '@mui/icons-material/Bolt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
@@ -22,6 +23,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 
@@ -46,6 +48,7 @@ const features = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [repoUrl, setRepoUrl] = useState('');
   const [branchName, setBranchName] = useState('main');
   const [state, setState] = useState('idle');
@@ -59,7 +62,10 @@ export default function Home() {
     if (!canSubmit) {
       return;
     }
+    const onboarding = { repoUrl, branchName, onboardedAt: new Date().toISOString() };
+    window.localStorage.setItem('repoWizard:onboarding', JSON.stringify(onboarding));
     setState('ready');
+    router.push(`/dashboard?repo=${encodeURIComponent(repoUrl)}&branch=${encodeURIComponent(branchName)}`);
   }
 
   return (
@@ -68,7 +74,7 @@ export default function Home() {
         minHeight: '100vh',
         overflow: 'hidden',
         background:
-          'radial-gradient(circle at top left, rgba(79,70,229,0.18), transparent 34%), radial-gradient(circle at 80% 15%, rgba(6,182,212,0.16), transparent 30%), #f6f8fc',
+          'linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.35)), radial-gradient(circle at 12% 12%, rgba(79,70,229,0.24), transparent 32%), radial-gradient(circle at 82% 10%, rgba(6,182,212,0.22), transparent 28%), radial-gradient(circle at 70% 78%, rgba(168,85,247,0.14), transparent 30%), #f6f8fc',
       }}
     >
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 7 } }}>
@@ -101,7 +107,7 @@ export default function Home() {
                 label="Bring your own repo URL and branch"
                 sx={{ alignSelf: 'flex-start', bgcolor: 'white', border: '1px solid rgba(79,70,229,0.16)' }}
               />
-              <Typography variant="h1" sx={{ fontSize: { xs: 44, md: 68 }, lineHeight: 0.95 }}>
+              <Typography variant="h1" sx={{ fontSize: { xs: 44, md: 72 }, lineHeight: 0.92 }}>
                 Onboard the repositories you already use.
               </Typography>
               <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 620, lineHeight: 1.7 }}>
@@ -109,7 +115,7 @@ export default function Home() {
                 and preparing it for analysis, automation, and team workflows.
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button variant="contained" size="large" href="#onboard">
+                <Button variant="contained" size="large" href="#onboard" endIcon={<ArrowForwardIcon />}>
                   Start onboarding
                 </Button>
                 <Button variant="outlined" size="large">
@@ -174,7 +180,7 @@ export default function Home() {
                 />
 
                 <Button type="submit" variant="contained" size="large" disabled={!canSubmit}>
-                  Validate repository
+                  Onboard repository
                 </Button>
 
                 {state === 'ready' && (
