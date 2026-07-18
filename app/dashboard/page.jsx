@@ -269,8 +269,15 @@ function DashboardContent() {
             </Stack>
           </Paper>
 
-          <Grid container spacing={3} alignItems="stretch">
-            <Grid item xs={12} md={3}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '280px minmax(0, 1fr)' },
+              gap: 3,
+              alignItems: 'start',
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
               <Paper
                 elevation={0}
                 sx={{
@@ -302,9 +309,9 @@ function DashboardContent() {
                   </ListItemButton>
                 </List>
               </Paper>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={9} sx={{ minWidth: 0, maxHeight: { md: 'calc(100vh - 220px)' }, overflow: 'auto', pr: { md: 0.5 } }}>
+            <Box sx={{ minWidth: 0, maxHeight: { md: 'calc(100vh - 220px)' }, overflow: 'auto', pr: { md: 0.5 } }}>
               {activeSection === 'files' ? (
                 <Stack spacing={3}>
                   {status === 'error' && <Alert severity="error">{errorMessage}</Alert>}
@@ -444,20 +451,20 @@ function DashboardContent() {
                         {selectedPullRequest && (
                           <Grid container spacing={2}>
                             <Grid item xs={12} md={8}>
-                              <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, height: '100%', minWidth: 0 }}>
+                              <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, height: '100%', minWidth: 0, overflow: 'auto' }}>
                                 <Stack spacing={1.5}>
                                   <Chip label={selectedPullRequest.state} color={selectedPullRequest.state === 'open' ? 'success' : 'default'} sx={{ alignSelf: 'flex-start' }} />
                                   <Typography variant="h5" sx={{ fontWeight: 800, overflowWrap: 'anywhere' }}>
                                     #{selectedPullRequest.number} {selectedPullRequest.title}
                                   </Typography>
-                                  <Typography color="text.secondary" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                                  <Typography color="text.secondary" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: { xs: 260, md: 420 }, overflow: 'auto' }}>
                                     {selectedPullRequest.body || 'No pull request description provided.'}
                                   </Typography>
                                 </Stack>
                               </Paper>
                             </Grid>
                             <Grid item xs={12} md={4}>
-                              <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, height: '100%', minWidth: 0 }}>
+                              <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, height: '100%', minWidth: 0, overflow: 'auto' }}>
                                 <Stack spacing={1.5}>
                                   <Typography fontWeight={800}>Details</Typography>
                                   <Typography color="text.secondary">Author: {selectedPullRequest.user?.login}</Typography>
@@ -477,8 +484,8 @@ function DashboardContent() {
                   </Stack>
                 </Paper>
               )}
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Stack>
       </Container>
     </Box>
