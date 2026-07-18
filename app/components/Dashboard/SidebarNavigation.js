@@ -11,7 +11,7 @@ export default function SidebarNavigation({ activeSection, setActiveSection }) {
     { id: 'files', label: 'Files & folders', desc: 'Browse repository code', icon: <FolderRoundedIcon /> },
     { id: 'pullRequests', label: 'Pull requests', desc: 'View PR details', icon: <CallMergeIcon /> },
     { id: 'aiInsights', label: 'AI Insights', desc: 'Architecture & Stack Summary', icon: <AutoAwesomeIcon /> },
-    { id: 'prReview', label: 'AI PR Review', desc: 'Autonomous Quality Linter', icon: <RateReviewIcon /> },
+    { id: 'prReview', label: 'AI Branch Review', desc: 'Autonomous Quality Linter', icon: <RateReviewIcon /> },
   ];
 
   return (

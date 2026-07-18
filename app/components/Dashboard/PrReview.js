@@ -6,7 +6,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+// import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 export default function AIPRReviewView({ 
   status, 
@@ -156,7 +156,7 @@ export default function AIPRReviewView({
                               </Stack>
 
                               {/* Interactive Instant Fix Application Control */}
-                              <Button
+                              {/* <Button
                                 variant="outlined"
                                 color="secondary"
                                 size="small"
@@ -166,7 +166,7 @@ export default function AIPRReviewView({
                                 sx={{ flexShrink: 0, textTransform: 'none', ml: { xs: 0, md: 2 }, mt: { xs: 1.5, md: 0 } }}
                               >
                                 {isCurrentFixing ? 'Fixing...' : 'Auto-Fix'}
-                              </Button>
+                              </Button> */}
                             </Stack>
                             {issueIdx < report.violations.length - 1 && <Divider />}
                           </Box>
