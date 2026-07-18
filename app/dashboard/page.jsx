@@ -1,13 +1,11 @@
 'use client';
 
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArticleIcon from '@mui/icons-material/Article';
 import FolderRoundedIcon from '@mui/icons-material/FolderRounded';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CodeIcon from '@mui/icons-material/Code';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
@@ -235,7 +233,7 @@ function DashboardContent() {
     >
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, md: 5 } }}>
         <Stack spacing={4}>
-          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, border: '1px solid rgba(16,24,40,0.08)' }}>
+          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, border: '1px solid rgba(16,24,40,0.08)', overflow: 'auto' }}>
             <Stack spacing={3}>
               <Breadcrumbs>
                 <Link component={NextLink} href="/" underline="hover" color="inherit">
@@ -273,18 +271,20 @@ function DashboardContent() {
 
           <Grid container spacing={3} alignItems="stretch">
             <Grid item xs={12} md={3}>
-              <Paper elevation={0} sx={{ height: '100%', position: { md: 'sticky' }, top: { md: 24 }, border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  height: { xs: 'auto', md: 'calc(100vh - 48px)' },
+                  position: { md: 'sticky' },
+                  top: { md: 24 },
+                  border: '1px solid rgba(16,24,40,0.08)',
+                  overflow: 'hidden',
+                }}
+              >
                 <Box sx={{ p: 2.5 }}>
-                  <Stack spacing={1}>
-                    <Typography variant="overline" color="text.secondary">
-                      Repository
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <GitHubIcon color="action" />
-                      <Typography fontWeight={800}>{repoName}</Typography>
-                    </Stack>
-                    <Chip icon={<AccountTreeIcon />} label={branchName} variant="outlined" sx={{ alignSelf: 'flex-start' }} />
-                  </Stack>
+                  <Typography variant="overline" color="text.secondary">
+                    Dashboard sections
+                  </Typography>
                 </Box>
                 <Divider />
                 <List disablePadding sx={{ display: { xs: 'flex', md: 'block' }, overflowX: { xs: 'auto', md: 'visible' } }}>
@@ -304,13 +304,13 @@ function DashboardContent() {
               </Paper>
             </Grid>
 
-            <Grid item xs={12} md={9} sx={{ minWidth: 0 }}>
+            <Grid item xs={12} md={9} sx={{ minWidth: 0, maxHeight: { md: 'calc(100vh - 220px)' }, overflow: 'auto', pr: { md: 0.5 } }}>
               {activeSection === 'files' ? (
                 <Stack spacing={3}>
                   {status === 'error' && <Alert severity="error">{errorMessage}</Alert>}
                   <Grid container spacing={3}>
                     <Grid item xs={12} lg={4} sx={{ minWidth: 0 }}>
-                      <Paper elevation={0} sx={{ border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
+                      <Paper elevation={0} sx={{ border: '1px solid rgba(16,24,40,0.08)', overflow: 'auto' }}>
                         <Box sx={{ p: 2.5 }}>
                           <Stack spacing={1}>
                             <Typography variant="overline" color="text.secondary">
@@ -355,7 +355,7 @@ function DashboardContent() {
                     </Grid>
 
                     <Grid item xs={12} lg={8} sx={{ minWidth: 0 }}>
-                      <Paper elevation={0} sx={{ border: '1px solid rgba(16,24,40,0.08)', overflow: 'hidden' }}>
+                      <Paper elevation={0} sx={{ border: '1px solid rgba(16,24,40,0.08)', overflow: 'auto' }}>
                         <Stack
                           direction={{ xs: 'column', sm: 'row' }}
                           justifyContent="space-between"
@@ -403,7 +403,7 @@ function DashboardContent() {
                   </Grid>
                 </Stack>
               ) : (
-                <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, border: '1px solid rgba(16,24,40,0.08)' }}>
+                <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, border: '1px solid rgba(16,24,40,0.08)', overflow: 'auto' }}>
                   <Stack spacing={3}>
                     <Box>
                       <Typography variant="h4" sx={{ fontWeight: 800 }}>
@@ -478,7 +478,8 @@ function DashboardContent() {
                 </Paper>
               )}
             </Grid>
-          </Grid>        </Stack>
+          </Grid>
+        </Stack>
       </Container>
     </Box>
   );
