@@ -22,9 +22,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { FormEvent, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-type OnboardingState = 'idle' | 'ready';
 
 const repoUrlPattern = /^(https?:\/\/|git@)([\w.-]+)([:/])([\w.-]+)\/([\w.-]+?)(\.git)?$/i;
 
@@ -49,13 +48,13 @@ const features = [
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState('');
   const [branchName, setBranchName] = useState('main');
-  const [state, setState] = useState<OnboardingState>('idle');
+  const [state, setState] = useState('idle');
 
   const repoUrlError = useMemo(() => repoUrl.length > 0 && !repoUrlPattern.test(repoUrl), [repoUrl]);
   const branchError = useMemo(() => branchName.trim().length === 0 || /\s/.test(branchName), [branchName]);
   const canSubmit = repoUrl.length > 0 && !repoUrlError && !branchError;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event) {
     event.preventDefault();
     if (!canSubmit) {
       return;
