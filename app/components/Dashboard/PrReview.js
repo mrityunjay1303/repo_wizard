@@ -75,7 +75,7 @@ export default function AIPRReviewView({
           <Box>
             <Stack direction="row" spacing={1.5} alignItems="center">
               <RateReviewIcon color="primary" />
-              <Typography variant="h4" sx={{ fontWeight: 800 }}>Autonomous PR Review</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 800 }}>Autonomous Code Review</Typography>
             </Stack>
             <Typography color="text.secondary" variant="body2" sx={{ mt: 0.5 }}>
               Evaluates codebase changes and matches them against compliance standards.
